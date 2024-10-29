@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from torchvision import transforms
-from torchvision.models import resnet18, resnet34
+from torchvision.models import resnet18, ResNet
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
@@ -147,85 +147,79 @@ class SiameseValidDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-num_classes = 2
-epochs = 100
-device = 'cuda:0'
-batch_size = 64
+# num_classes = 2
+# epochs = 100
+# device = 'cuda:1'
+# batch_size = 64
 
 transform = transforms.Compose([transforms.Resize((224,224)),
                                       transforms.ToTensor(),
                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
-train_dataset = SiameseDataset('train_merge.csv',transform)
-train_dataloader = DataLoader(train_dataset,batch_size=batch_size,shuffle=True,collate_fn=custom_collate_fn,num_workers=10)
+# train_dataset = SiameseDataset('train.csv',transform)
+# train_dataloader = DataLoader(train_dataset,batch_size=batch_size,shuffle=True,collate_fn=custom_collate_fn,num_workers=10)
 
-valid_dataset = SiameseValidDataset('valid_merge.csv',transform)
-valid_dataloader = DataLoader(valid_dataset,batch_size=batch_size,shuffle=True, num_workers=10)
+# valid_dataset = SiameseValidDataset('valid.csv',transform)
+# valid_dataloader = DataLoader(valid_dataset,batch_size=batch_size,shuffle=True, num_workers=10)
 
 # model = base_model(num_classes=num_classes).to(device)
-model = resnet18(pretrained=True)
-# model = resnet34(pretrained=True)
-model.fc = nn.Linear(model.fc.in_features, num_classes)
-
-model = model.to(device)
-
-loss_func = Criterion()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=0.0005)
+# loss_func = Criterion()
+# optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=0.0005)
 
 
-def train_1_epoch(model,loss_func,optimizer,dataloader,epoch, epochs,device):
-    model.train()
+# def train_1_epoch(model,loss_func,optimizer,dataloader,epoch, epochs,device):
+#     model.train()
     
-    print(('\n' + '%10s   ' * 3) % ('Epoch', 'total_loss', 'targets'))
-    pbar = enumerate(dataloader)
-    pbar = tqdm(pbar,total=len(dataloader))
+#     print(('\n' + '%10s   ' * 3) % ('Epoch', 'total_loss', 'targets'))
+#     pbar = enumerate(dataloader)
+#     pbar = tqdm(pbar,total=len(dataloader))
     
-    train_loss = 0
-    for batch_id,((raw_images,mask_images),labels) in pbar:
-        optimizer.zero_grad()
+#     train_loss = 0
+#     for batch_id,((raw_images,mask_images),labels) in pbar:
+#         optimizer.zero_grad()
         
-        raw_images = raw_images.to(device)
-        mask_images = mask_images.to(device)
-        labels = labels.to(device)
+#         raw_images = raw_images.to(device)
+#         mask_images = mask_images.to(device)
+#         labels = labels.to(device)
         
-        out_raw  =  model(raw_images)
-        out_mask = model(mask_images)
+#         out_raw  =  model(raw_images)
+#         out_mask = model(mask_images)
         
-        loss = loss_func(out_raw,out_mask,labels)
-        loss.backward()
-        optimizer.step()
+#         loss = loss_func(out_raw,out_mask,labels)
+#         loss.backward()
+#         optimizer.step()
         
-        train_loss += loss.item()
+#         train_loss += loss.item()
         
-        s = f'       {epoch}/{epochs}  {train_loss/(batch_id+1):4.4f}             {labels.shape[0]}'
-        pbar.set_description(s)
-        ckpt = {'model':model.state_dict()}
-        torch.save(ckpt,'context_model_resnet18_last_2810.pt') 
+#         s = f'       {epoch}/{epochs}  {train_loss/(batch_id+1):4.4f}             {labels.shape[0]}'
+#         pbar.set_description(s)
+#         ckpt = {'model':model.state_dict()}
+#         torch.save(ckpt,'context_model_last_2810.pt') 
 
-def test(model,dataloader,device):
-    model.eval()
-    total= 0
-    correct = 0
-    with torch.no_grad():
-        print(('\n' + '%10s   ' * 3) % ('acc', 'correct', 'total'))
-        pbar = enumerate(dataloader)
-        pbar = tqdm(pbar,total=len(dataloader))
-        for batch_idx, (inputs, targets) in pbar:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = model(inputs)
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
+# def test(model,dataloader,device):
+#     model.eval()
+#     total= 0
+#     correct = 0
+#     with torch.no_grad():
+#         print(('\n' + '%10s   ' * 3) % ('acc', 'correct', 'total'))
+#         pbar = enumerate(dataloader)
+#         pbar = tqdm(pbar,total=len(dataloader))
+#         for batch_idx, (inputs, targets) in pbar:
+#             inputs, targets = inputs.to(device), targets.to(device)
+#             outputs = model(inputs)
+#             _, predicted = outputs.max(1)
+#             total += targets.size(0)
+#             correct += predicted.eq(targets).sum().item()
             
-            s = f'      {correct/total: 4.4f}  (    {correct}  /      {total}) '
-            pbar.set_description(s)
+#             s = f'      {correct/total: 4.4f}  (    {correct}  /      {total}) '
+#             pbar.set_description(s)
 
-    return correct / total
+#     return correct / total
 
-best_acc = 0
-for epoch in range(epochs):
-    train_1_epoch(model,loss_func,optimizer,train_dataloader,epoch,epochs,device)
-    acc = test(model,valid_dataloader,device)
-    if acc > best_acc:
-        ckpt = {'model':model.state_dict()}
-        torch.save(ckpt,'context_model_resnet18_best_2810.pt')
+# best_acc = 0
+# for epoch in range(epochs):
+#     train_1_epoch(model,loss_func,optimizer,train_dataloader,epoch,epochs,device)
+#     acc = test(model,valid_dataloader,device)
+#     if acc > best_acc:
+#         ckpt = {'model':model.state_dict()}
+#         torch.save(ckpt,'context_model_best_2810.pt')
